@@ -17,6 +17,9 @@ internal static class ExifEncodedStringHelpers
     private const ulong UnicodeCode = 0x_45_44_4F_43_49_4E_55;
     private const ulong UndefinedCode = 0x_00_00_00_00_00_00_00_00;
 
+    // UTF-16LE (デフォルト)と UTF-16BE の両方をサポート
+    private static Encoding? unicodeEncodingOverride;
+
     private static ReadOnlySpan<byte> AsciiCodeBytes => new byte[] { 0x41, 0x53, 0x43, 0x49, 0x49, 0, 0, 0 };
 
     private static ReadOnlySpan<byte> JISCodeBytes => new byte[] { 0x4A, 0x49, 0x53, 0, 0, 0, 0, 0 };
@@ -34,6 +37,16 @@ internal static class ExifEncodedStringHelpers
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             return Encoding.GetEncoding(20932);
         }
+    }
+
+    /// <summary>
+    /// Unicodeエンコーディングをオーバーライドして使用するかどうかを設定します。
+    /// これをtrueに設定すると、CharacterCode.UnicodeでもUTF-16BEエンコーディングが使用されます。
+    /// </summary>
+    /// <param name="useBigEndian">trueの場合、UTF-16BEエンコーディングを使用します。falseの場合、通常のUTF-16LEに戻ります。</param>
+    public static void SetUnicodeBigEndian(bool useBigEndian)
+    {
+        unicodeEncodingOverride = useBigEndian ? Encoding.BigEndianUnicode : null;
     }
 
     public static bool IsEncodedString(ExifTagValue tag) => tag switch
@@ -55,7 +68,7 @@ internal static class ExifEncodedStringHelpers
     {
         CharacterCode.ASCII => Encoding.UTF8,  // ASCII コードの場合でも UTF-8 エンコーディングを使用
         CharacterCode.JIS => JIS0208Encoding,
-        CharacterCode.Unicode => Encoding.Unicode,
+        CharacterCode.Unicode => unicodeEncodingOverride ?? Encoding.Unicode,
         CharacterCode.Undefined => Encoding.UTF8,
         _ => Encoding.UTF8
     };
