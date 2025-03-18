@@ -14,6 +14,9 @@ SixLabors.ImageSharp
 
 </div>
 
+> **Note**: This is Fork of ImageSharp, modified to support UTF-8 encoding in EXIF UserComment tags.
+> See [CHANGELOG.md](CHANGELOG.md) for details.
+
 ### **ImageSharp** is a new, fully featured, fully managed, cross-platform, 2D graphics API. 
 
 ImageSharp is a new, fully featured, fully managed, cross-platform, 2D graphics library. 

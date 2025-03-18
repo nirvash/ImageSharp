@@ -27,6 +27,13 @@
     <MinVerMinimumMajorMinor>4.0</MinVerMinimumMajorMinor>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Custom Version -->
+    <Version>2.1.0-custom3</Version>
+    <Authors>nirvash</Authors>
+    <RepositoryUrl>https://github.com/nirvash/ImageSharp</RepositoryUrl>
+  </PropertyGroup>
+
   <Choose>
     <When Condition="$(SIXLABORS_TESTING_PREVIEW) == true">
       <PropertyGroup>

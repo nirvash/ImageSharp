@@ -1,6 +1,7 @@
 // Copyright (c) Six Labors.
 // Licensed under the Six Labors Split License.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Text;
 using static SixLabors.ImageSharp.Metadata.Profiles.Exif.EncodedString;
@@ -52,7 +53,7 @@ internal static class ExifEncodedStringHelpers
 
     public static Encoding GetEncoding(CharacterCode code) => code switch
     {
-        CharacterCode.ASCII => Encoding.ASCII,
+        CharacterCode.ASCII => Encoding.UTF8,  // ASCII コードの場合でも UTF-8 エンコーディングを使用
         CharacterCode.JIS => JIS0208Encoding,
         CharacterCode.Unicode => Encoding.Unicode,
         CharacterCode.Undefined => Encoding.UTF8,
@@ -63,9 +64,20 @@ internal static class ExifEncodedStringHelpers
     {
         if (TryDetect(buffer, out CharacterCode code))
         {
-            string text = GetEncoding(code).GetString(buffer[CharacterCodeBytesLength..]);
-            encodedString = new EncodedString(code, text);
-            return true;
+            // ASCII コードの場合は UTF-8 でデコード
+            Encoding encoding = code == CharacterCode.ASCII ? Encoding.UTF8 : GetEncoding(code);
+            try
+            {
+                string text = encoding.GetString(buffer[CharacterCodeBytesLength..].ToArray());
+                encodedString = new EncodedString(code, text);
+                return true;
+            }
+            catch (DecoderFallbackException)
+            {
+                // デコードに失敗した場合
+                encodedString = default;
+                return false;
+            }
         }
 
         encodedString = default;

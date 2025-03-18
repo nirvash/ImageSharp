@@ -647,6 +647,55 @@ public class ExifValuesTests
     }
 
     [Theory]
+    [InlineData("日本語テキスト")]
+    public void ExifUserCommentBinaryLayoutTest(string text)
+    {
+        // バイナリレイアウトの検証
+        var userComment = new EncodedString(EncodedString.CharacterCode.ASCII, text);
+        var buffer = new byte[1024];
+        int bytesWritten = ExifEncodedStringHelpers.Write(userComment, buffer);
+
+        // ASCIIヘッダーの検証
+        var expectedHeader = new byte[] { 0x41, 0x53, 0x43, 0x49, 0x49, 0x00, 0x00, 0x00 };
+        Assert.True(buffer.AsSpan(0, 8).SequenceEqual(expectedHeader));
+
+        // UTF-8データの検証
+        var expectedBytes = Encoding.UTF8.GetBytes(text);
+        var actualBytes = buffer.AsSpan(8, bytesWritten - 8).ToArray();
+        Assert.Equal(expectedBytes, actualBytes);
+    }
+
+    [Theory]
+    [InlineData("Hello こんにちは")]
+    public void ExifUserCommentRoundTripTest(string text)
+    {
+        // 書き込み→読み込みの一連の処理のテスト
+        var original = new EncodedString(EncodedString.CharacterCode.ASCII, text);
+        var buffer = new byte[1024];
+        int bytesWritten = ExifEncodedStringHelpers.Write(original, buffer);
+
+        // 読み込みテスト
+        bool success = ExifEncodedStringHelpers.TryParse(buffer.AsSpan(0, bytesWritten), out EncodedString result);
+        Assert.True(success);
+        Assert.Equal(text, result.Text);
+        Assert.Equal(EncodedString.CharacterCode.ASCII, result.Code);
+    }
+
+    [Fact]
+    public void ExifUserCommentWithInvalidUtf8Test()
+    {
+        // 不正なUTF-8シーケンスのテスト
+        var buffer = new byte[1024];
+        var header = new byte[] { 0x41, 0x53, 0x43, 0x49, 0x49, 0x00, 0x00, 0x00 };
+        header.CopyTo(buffer, 0);
+        var invalidUtf8 = new byte[] { 0xFF, 0xFF, 0xFF }; // 不正なUTF-8シーケンス
+        invalidUtf8.CopyTo(buffer, 8);
+
+        bool result = ExifEncodedStringHelpers.TryParse(buffer.AsSpan(0, 11), out _);
+        Assert.False(result);
+    }
+
+    [Theory]
     [MemberData(nameof(Ucs2StringTags))]
     public void ExifUcs2StringTests(ExifTag tag)
     {
